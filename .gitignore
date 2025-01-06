@@ -1,0 +1,9 @@
+build
+
+raylib/*.zip
+
+# Nob
+nob
+nob.old
+nob.exe
+nob.exe.old
