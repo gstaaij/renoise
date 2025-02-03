@@ -4,6 +4,7 @@
 
 #define CMD_CC(cmd) cmd_append(cmd, "gcc")
 #define CMD_CFLAGS(cmd) cmd_append(cmd, "-Wall", "-Wextra", "-Wswitch-enum")
+#define CMD_LFLAGS(cmd) cmd_append(cmd, "-lm")
 
 static const char* renoise_cfiles[] = {
     "renoise",
@@ -30,6 +31,7 @@ bool build_renoise() {
             CMD_CFLAGS(&cmd);
             cmd_append(&cmd, "-c", input_path);
             cmd_append(&cmd, "-o", output_path);
+            CMD_LFLAGS(&cmd);
             Proc proc = cmd_run_async_and_reset(&cmd);
             da_append(&procs, proc);
         }
