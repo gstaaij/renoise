@@ -1,5 +1,6 @@
 #pragma once
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifndef RENOISE_CHUNK_SIZE
 #define RENOISE_CHUNK_SIZE 16
@@ -11,9 +12,21 @@ typedef struct {
 } Renoise_Gradient_Point;
 
 typedef struct {
-    Renoise_Gradient_Point* items;
-    size_t capacity;
-    size_t count;
+    uint8_t x;
+    uint8_t y;
+} Renoise_Point;
+
+typedef struct {
+    Renoise_Gradient_Point* grad_points;
+    uint64_t grad_point_count_x;
+    uint64_t grad_point_count_y;
+    int64_t chunk_x;
+    int64_t chunk_y;
+    double grad_offset_x;
+    double grad_offset_y;
+    double frequency;
+    Renoise_Point points[RENOISE_CHUNK_SIZE][RENOISE_CHUNK_SIZE];
 } Renoise_Chunk;
 
 Renoise_Gradient_Point renoise_gradient_point_generate();
+Renoise_Chunk renoise_chunk_generate(int64_t chunk_x, int64_t chunk_y, double frequency);

@@ -1,11 +1,18 @@
 #include <raylib.h>
 #include <renoise.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 int main() {
     
-    Renoise_Gradient_Point gp = renoise_gradient_point_generate();
-    printf("{%lf; %lf}", gp.x, gp.y);
+    Renoise_Chunk chunk = renoise_chunk_generate(3, 6, 0.2);
+    uint64_t grad_point_count = chunk.grad_point_count_x * chunk.grad_point_count_y;
+    for (uint64_t i = 0; i < grad_point_count; ++i) {
+        uint64_t x = i % chunk.grad_point_count_x;
+        uint64_t y = i / chunk.grad_point_count_y;
+        printf("%"PRIu64", %"PRIu64":  {%lf; %lf}\n", x, y, chunk.grad_points[i].x, chunk.grad_points[i].y);
+    }
 
     return 0;
 
