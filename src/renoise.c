@@ -20,6 +20,8 @@ Renoise_Gradient_Point renoise_gradient_point_generate() {
 Renoise_Chunk renoise_chunk_generate(int64_t chunk_x, int64_t chunk_y, double frequency) {
     Renoise_Chunk chunk = {0};
     chunk.frequency = frequency;
+    chunk.chunk_x = chunk_x;
+    chunk.chunk_y = chunk_y;
     double grad_point_size = RENOISE_CHUNK_SIZE * frequency;
     double grad_point_size_decimal = fmod(grad_point_size, 1.0);
     chunk.grad_offset_x = fmod(chunk_x * grad_point_size_decimal, 1.0);
