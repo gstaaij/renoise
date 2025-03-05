@@ -28,5 +28,12 @@ typedef struct {
     Renoise_Point points[RENOISE_CHUNK_SIZE][RENOISE_CHUNK_SIZE];
 } Renoise_Chunk;
 
+typedef struct {
+    Renoise_Chunk* chunks;
+    uint64_t world_size;
+    double frequency;
+} Renoise_World;
+
 Renoise_Gradient_Point renoise_gradient_point_generate();
 Renoise_Chunk renoise_chunk_generate(int64_t chunk_x, int64_t chunk_y, double frequency);
+Renoise_World renoise_world_create(uint64_t world_size, double frequency);

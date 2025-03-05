@@ -36,3 +36,16 @@ Renoise_Chunk renoise_chunk_generate(int64_t chunk_x, int64_t chunk_y, double fr
     // TODO: generate points (maybe in other function?)
     return chunk;
 }
+
+Renoise_World renoise_world_create(uint64_t world_size, double frequency) {
+    Renoise_World world = {0};
+    world.frequency = frequency;
+    world.world_size = world_size;
+    world.chunks = malloc(world_size*world_size * sizeof(*world.chunks));
+    for (uint64_t i = 0; i < world_size*world_size; ++i) {
+        uint64_t x = i % world_size;
+        uint64_t y = i / world_size;
+        world.chunks[i] = renoise_chunk_generate(x, y, frequency);
+    }
+    return world;
+}
