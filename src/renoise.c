@@ -9,8 +9,8 @@ Renoise_Gradient_Point renoise_gradient_point_generate() {
     };
 }
 
-// **************** **************** ****************
-// ^    ^    ^    ^     ^    ^    ^     ^    ^    ^
+// **************** **************** **************** **************** **************** ****************
+// ^    ^    ^    ^     ^    ^    ^     ^    ^    ^     ^    ^    ^     ^    ^    ^     ^    ^    ^    ^
 // freq = 1/5 = 0.2
 // count_part = RENOISE_CHUNK_SIZE * freq = 16*0.2 = 3.2
 // count_extra = count_part % 1
@@ -24,8 +24,13 @@ Renoise_Chunk renoise_chunk_generate(int64_t chunk_x, int64_t chunk_y, double fr
     chunk.y = chunk_y;
     double grad_point_size = RENOISE_CHUNK_SIZE * frequency;
     double grad_point_size_decimal = fmod(grad_point_size, 1.0);
-    chunk.grad_offset_x = fmod(chunk.x * grad_point_size_decimal, 1.0);
-    chunk.grad_offset_y = fmod(chunk.y * grad_point_size_decimal, 1.0);
+    chunk.grad_offset_x = chunk.x * (1.0 - grad_point_size_decimal);
+    chunk.grad_offset_y = chunk.y * (1.0 - grad_point_size_decimal);
+    // The rounding is to prevent floating point errors from messing with the fmod
+    chunk.grad_offset_x = round(chunk.grad_offset_x / chunk.frequency) * chunk.frequency;
+    chunk.grad_offset_y = round(chunk.grad_offset_y / chunk.frequency) * chunk.frequency;
+    chunk.grad_offset_x = fmod(chunk.grad_offset_x, 1.0);
+    chunk.grad_offset_y = fmod(chunk.grad_offset_y, 1.0);
     chunk.grad_point_count_x = ceil(grad_point_size - chunk.grad_offset_x);
     chunk.grad_point_count_y = ceil(grad_point_size - chunk.grad_offset_y);
 

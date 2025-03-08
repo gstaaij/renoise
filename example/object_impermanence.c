@@ -6,10 +6,18 @@
 
 int main() {
     
-    Renoise_World world = renoise_world_create(6, 0.1);
+    Renoise_World world = renoise_world_create(6, 0.2);
     renoise_world_generate(&world);
 
-    InitWindow(1920, 1080, "Hello, Raylib!");
+    printf("\n");
+    for (uint64_t i = 0; i < 6; ++i) {
+        Renoise_Chunk* chunk = &world.chunks[i];
+        printf("chunks[%"PRIu64"] = { .grad_point_count_x = %"PRIu64", .grad_point_count_y = %"PRIu64", .x = %"PRIi64", .y = %"PRIi64", .grad_offset_x = %.16lf, .grad_offset_y = %lf }\n", i, chunk->grad_point_count_x, chunk->grad_point_count_y, chunk->x, chunk->y, chunk->grad_offset_x, chunk->grad_offset_y);
+    }
+
+    #define SCALE 10
+    const int window_size = world.world_size * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE * 2;
+    InitWindow(window_size, window_size, "Renoise Example: Object Impermanence");
 
     bool background = false;
     bool text = false;
@@ -27,7 +35,6 @@ int main() {
             if (IsKeyPressed(KEY_E)) {
                 extra = !extra;
             }
-            #define SCALE 10
             double y = 0;
             for (uint64_t wy = 0; wy < world.world_size; ++wy) {
                 double x = 0;
@@ -59,8 +66,6 @@ int main() {
                     for (uint64_t ci = 0; ci < chunk->grad_point_count_x*chunk->grad_point_count_y; ++ci) {
                         uint64_t cx = ci % chunk->grad_point_count_x;
                         uint64_t cy = ci / chunk->grad_point_count_x;
-                        // double xpos = (double) (x + cx) / world.frequency * SCALE + (chunk->grad_offset_x * SCALE) + 1/world.frequency * SCALE;
-                        // double ypos = (double) (y + cy) / world.frequency * SCALE + (chunk->grad_offset_y * SCALE) + 1/world.frequency * SCALE;
                         double xpos = off_x + (cx + chunk->grad_offset_x) / world.frequency * SCALE;
                         double ypos = off_y + (cy + chunk->grad_offset_y) / world.frequency * SCALE;
                         DrawRectangle(xpos - SCALE/2, ypos - SCALE/2, SCALE, SCALE, WHITE);
