@@ -7,18 +7,12 @@
 int main() {
     
     Renoise_World world = renoise_world_create(6, 0.2);
-
-    Renoise_Chunk* chunk = &world.chunks[1];
-    printf("\nchunks[1] = { .grad_point_count_x = %"PRIu64", .grad_point_count_y = %"PRIu64", .chunk_x = %"PRIi64", .chunk_y = %"PRIi64", .grad_offset_x = %lf, .grad_offset_y = %lf }\n", chunk->grad_point_count_x, chunk->grad_point_count_y, chunk->chunk_x, chunk->chunk_y, chunk->grad_offset_x, chunk->grad_offset_y);
-    for (size_t i = 0; i < chunk->grad_point_count_x*chunk->grad_point_count_y; ++i) {
-        printf("  chunks[1][%zu] = { %lf, %lf }\n", i, chunk->grad_points[i].x,chunk->grad_points[i].y);
-    }
-    // return 0;
+    renoise_world_generate(&world);
 
     InitWindow(1920, 1080, "Hello, Raylib!");
 
-    bool background = true;
-    bool text = true;
+    bool background = false;
+    bool text = false;
     bool extra = false;
 
     while (!WindowShouldClose()) {
@@ -41,18 +35,32 @@ int main() {
                 for (uint64_t wx = 0; wx < world.world_size; ++wx) {
                     uint64_t windex = wx + wy*world.world_size;
                     chunk = &world.chunks[windex];
+                    double off_x = wx * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE;
+                    double off_y = wy * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE;
+                    for (uint8_t chunk_x = 0; chunk_x < RENOISE_CHUNK_SIZE; ++chunk_x) {
+                        for (uint8_t chunk_y = 0; chunk_y < RENOISE_CHUNK_SIZE; ++chunk_y) {
+                            uint8_t gray_val = (chunk->points[chunk_y][chunk_x] + 1.0) / 2.0 * 255;
+                            DrawRectangle(
+                                off_x + chunk_x * SCALE,
+                                off_y + chunk_y * SCALE,
+                                SCALE,
+                                SCALE,
+                                (Color) { gray_val, gray_val, gray_val, 255 }
+                            );
+                        }
+                    }
                     if (background) DrawRectangle(
-                        wx * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE/2,
-                        wy * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE/2,
+                        off_x,
+                        off_y,
                         RENOISE_CHUNK_SIZE * SCALE,
                         RENOISE_CHUNK_SIZE * SCALE,
-                        (Color) { 0, ((double) wx / (double) world.world_size) * 255, ((double) wy / (double) world.world_size) * 255, 255 }
+                        (Color) { 0, ((double) wx / (double) world.world_size) * 255, ((double) wy / (double) world.world_size) * 255, 127 }
                     );
                     for (uint64_t ci = 0; ci < chunk->grad_point_count_x*chunk->grad_point_count_y; ++ci) {
                         uint64_t cx = ci % chunk->grad_point_count_x;
                         uint64_t cy = ci / chunk->grad_point_count_x;
-                        double xpos = (double) (x + cx) / world.frequency * SCALE + (chunk->grad_offset_x * SCALE) + 1/world.frequency * SCALE/2;
-                        double ypos = (double) (y + cy) / world.frequency * SCALE + (chunk->grad_offset_y * SCALE) + 1/world.frequency * SCALE/2;
+                        double xpos = (double) (x + cx) / world.frequency * SCALE + (chunk->grad_offset_x * SCALE) + 1/world.frequency * SCALE;
+                        double ypos = (double) (y + cy) / world.frequency * SCALE + (chunk->grad_offset_y * SCALE) + 1/world.frequency * SCALE;
                         DrawRectangle(xpos - SCALE/2, ypos - SCALE/2, SCALE, SCALE, WHITE);
                         DrawLineEx(
                             (Vector2) { xpos, ypos },
@@ -65,15 +73,15 @@ int main() {
                         );
                         if (extra) DrawText(
                             TextFormat("%"PRIu64": { %"PRIu64", %"PRIu64" }; { %.02lf, %.02lf }", ci, cx, cy, xpos, ypos),
-                            wx * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE/2 + 10,
-                            wy * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE/2 + ci * SCALE + (text ? 24 : 0),
+                            off_x + 10,
+                            off_y + ci * SCALE + (text ? 24 : 0),
                             SCALE, YELLOW
                         );
                     }
                     if (text) DrawText(
                         TextFormat("(%"PRIu64", %"PRIu64")", chunk->grad_point_count_x, chunk->grad_point_count_y),
-                        wx * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE/2,
-                        wy * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE/2,
+                        off_x,
+                        off_y,
                         24, YELLOW
                     );
 
