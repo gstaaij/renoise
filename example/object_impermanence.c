@@ -6,7 +6,7 @@
 
 int main() {
     
-    Renoise_World world = renoise_world_create(6, 0.2);
+    Renoise_World world = renoise_world_create(6, 0.1);
     renoise_world_generate(&world);
 
     InitWindow(1920, 1080, "Hello, Raylib!");
@@ -59,8 +59,10 @@ int main() {
                     for (uint64_t ci = 0; ci < chunk->grad_point_count_x*chunk->grad_point_count_y; ++ci) {
                         uint64_t cx = ci % chunk->grad_point_count_x;
                         uint64_t cy = ci / chunk->grad_point_count_x;
-                        double xpos = (double) (x + cx) / world.frequency * SCALE + (chunk->grad_offset_x * SCALE) + 1/world.frequency * SCALE;
-                        double ypos = (double) (y + cy) / world.frequency * SCALE + (chunk->grad_offset_y * SCALE) + 1/world.frequency * SCALE;
+                        // double xpos = (double) (x + cx) / world.frequency * SCALE + (chunk->grad_offset_x * SCALE) + 1/world.frequency * SCALE;
+                        // double ypos = (double) (y + cy) / world.frequency * SCALE + (chunk->grad_offset_y * SCALE) + 1/world.frequency * SCALE;
+                        double xpos = off_x + (cx + chunk->grad_offset_x) / world.frequency * SCALE;
+                        double ypos = off_y + (cy + chunk->grad_offset_y) / world.frequency * SCALE;
                         DrawRectangle(xpos - SCALE/2, ypos - SCALE/2, SCALE, SCALE, WHITE);
                         DrawLineEx(
                             (Vector2) { xpos, ypos },
