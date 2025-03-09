@@ -3,7 +3,7 @@
 #include "src/nob.h"
 
 #define CMD_CC(cmd) cmd_append(cmd, "gcc")
-#define CMD_CFLAGS(cmd) cmd_append(cmd, "-Wall", "-Wextra", "-Wswitch-enum")
+#define CMD_CFLAGS(cmd) cmd_append(cmd, "-Wall", "-Wextra", "-Wswitch-enum", "-ggdb")
 #define CMD_LFLAGS(cmd) cmd_append(cmd, "-lm")
 
 static const char* renoise_cfiles[] = {
@@ -26,7 +26,12 @@ bool build_renoise() {
 
         da_append(&object_files, output_path);
 
-        if (needs_rebuild1(output_path, input_path)) {
+        const char* depends[] = {
+            input_path,
+            "./src/renoise.h",
+        };
+
+        if (needs_rebuild(output_path, depends, ARRAY_LEN(depends))) {
             CMD_CC(&cmd);
             CMD_CFLAGS(&cmd);
             cmd_append(&cmd, "-c", input_path);
@@ -95,7 +100,7 @@ int main(int argc, char** argv) {
 
     if (!mkdir_if_not_exists("./build")) return 1;
 
-    build_renoise();
+    if (!build_renoise()) return 1;
 
     if (!compile_example) return 0;
 
