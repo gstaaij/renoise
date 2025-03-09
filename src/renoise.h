@@ -1,10 +1,12 @@
 #pragma once
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 
 #ifndef RENOISE_CHUNK_SIZE
 #define RENOISE_CHUNK_SIZE 16
 #endif // RENOISE_CHUNK_SIZE
+static_assert(RENOISE_CHUNK_SIZE >= 0 && RENOISE_CHUNK_SIZE < 256, "RENOISE_CHUNK_SIZE should fit in an unsigned 8-bit integer");
 
 typedef struct {
     double x;

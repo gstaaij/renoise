@@ -83,26 +83,51 @@ void renoise_world_generate(Renoise_World* world) {
             for (uint8_t chunk_x = 0; chunk_x < RENOISE_CHUNK_SIZE; ++chunk_x) {
                 for (uint8_t chunk_y = 0; chunk_y < RENOISE_CHUNK_SIZE; ++chunk_y) {
                     Renoise_Gradient_Point grad_coord = renoise_chunk_coord_to_gradient_coord(chunk, chunk_x, chunk_y);
-                    int grad_cell_x = floor(grad_coord.x);
-                    int grad_cell_y = floor(grad_coord.y);
+                    int64_t grad_cell_x = floor(grad_coord.x);
+                    int64_t grad_cell_y = floor(grad_coord.y);
 
                     chunk->points[chunk_y][chunk_x] = 0.0;
-                    for (int grid_x = grad_cell_x; grid_x <= grad_cell_x + 1; ++grid_x) {
-                        for (int grid_y = grad_cell_y; grid_y <= grad_cell_y + 1; ++grid_y) {
-                            if (grid_x < 0) {
-                                continue; // TODO: use chunk to the left
+                    for (int64_t grid_x = grad_cell_x; grid_x <= grad_cell_x + 1; ++grid_x) {
+                        for (int64_t grid_y = grad_cell_y; grid_y <= grad_cell_y + 1; ++grid_y) {
+                            Renoise_Chunk* query_chunk = chunk;
+                            int64_t query_x = grid_x;
+                            int64_t query_y = grid_y;
+                            int64_t current_world_x = world_x;
+                            int64_t current_world_y = world_y;
+                            while (query_x < 0) {
+                                // Use chunk to the left
+                                current_world_x -= 1;
+                                assert(current_world_x >= 0);
+                                query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
+                                query_x = query_chunk->grad_point_count_x - 1;
                             }
-                            if (grid_x >= RENOISE_CHUNK_SIZE) {
-                                continue; // TODO: use chunk to the right
+                            while (query_x >= (int64_t) query_chunk->grad_point_count_x) {
+                                // Use chunk to the right
+                                current_world_x += 1;
+                                assert(current_world_x < world->world_size);
+                                query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
+                                query_x = 0;
                             }
-                            if (grid_y < 0) {
-                                continue; // TODO: use chunk above
+                            while (query_y < 0) {
+                                // Use chunk above
+                                current_world_y -= 1;
+                                assert(current_world_y >= 0);
+                                query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
+                                query_y = query_chunk->grad_point_count_y - 1;
                             }
-                            if (grid_y >= RENOISE_CHUNK_SIZE) {
-                                continue; // TODO: use chunk below
+                            while (query_y >= (int64_t) query_chunk->grad_point_count_y) {
+                                // Use chunk below
+                                current_world_y += 1;
+                                assert(current_world_y < world->world_size);
+                                query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
+                                query_y = 0;
                             }
+                            assert(query_x >= 0);
+                            assert(query_x < (int64_t) query_chunk->grad_point_count_x);
+                            assert(query_y >= 0);
+                            assert(query_y < (int64_t) query_chunk->grad_point_count_y);
 
-                            Renoise_Gradient_Point grad_point = chunk->grad_points[grid_x + grid_y * chunk->grad_point_count_x];
+                            Renoise_Gradient_Point grad_point = query_chunk->grad_points[query_x + query_y * query_chunk->grad_point_count_x];
                             chunk->points[chunk_y][chunk_x] += perlin_falloff(grad_coord.x - grid_x, grad_coord.y - grid_y, grad_point);
                         }
                     }
