@@ -33,3 +33,4 @@ Renoise_Gradient_Point renoise_gradient_point_generate();
 Renoise_Chunk renoise_chunk_generate(int64_t chunk_x, int64_t chunk_y, double frequency);
 Renoise_World renoise_world_create(uint64_t world_size, double frequency);
 void renoise_world_generate(Renoise_World* world);
+void renoise_world_regenerate_rect(Renoise_World* world, int64_t chunk_x, int64_t chunk_y, int64_t width, int64_t height);

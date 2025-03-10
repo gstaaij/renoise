@@ -6,7 +6,7 @@
 
 int main() {
     
-    Renoise_World world = renoise_world_create(6, 0.2);
+    Renoise_World world = renoise_world_create(12, 0.2);
     renoise_world_generate(&world);
 
     printf("\n");
@@ -15,13 +15,20 @@ int main() {
         printf("chunks[%"PRIu64"] = { .grad_point_count_x = %"PRIu64", .grad_point_count_y = %"PRIu64", .x = %"PRIi64", .y = %"PRIi64", .grad_offset_x = %.16lf, .grad_offset_y = %lf }\n", i, chunk->grad_point_count_x, chunk->grad_point_count_y, chunk->x, chunk->y, chunk->grad_offset_x, chunk->grad_offset_y);
     }
 
-    #define SCALE 10
+    #define SCALE 5
     const int window_size = world.world_size * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE * 2;
     InitWindow(window_size, window_size, "Renoise Example: Object Impermanence");
+    SetTargetFPS(60);
 
+    // Visual control booleans
     bool background = false;
     bool text = false;
     bool extra = false;
+    bool grad_vectors = true;
+
+    bool was_dragging = false;
+    int64_t mouse_chunk_x_start = 0;
+    int64_t mouse_chunk_y_start = 0;
 
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -34,6 +41,9 @@ int main() {
             }
             if (IsKeyPressed(KEY_E)) {
                 extra = !extra;
+            }
+            if (IsKeyPressed(KEY_V) || IsKeyPressed(KEY_G)) {
+                grad_vectors = !grad_vectors;
             }
             double y = 0;
             for (uint64_t wy = 0; wy < world.world_size; ++wy) {
@@ -68,8 +78,8 @@ int main() {
                         uint64_t cy = ci / chunk->grad_point_count_x;
                         double xpos = off_x + (cx + chunk->grad_offset_x) / world.frequency * SCALE;
                         double ypos = off_y + (cy + chunk->grad_offset_y) / world.frequency * SCALE;
-                        DrawRectangle(xpos - SCALE/2, ypos - SCALE/2, SCALE, SCALE, WHITE);
-                        DrawLineEx(
+                        if (grad_vectors) DrawRectangle(xpos - SCALE/2, ypos - SCALE/2, SCALE, SCALE, WHITE);
+                        if (grad_vectors) DrawLineEx(
                             (Vector2) { xpos, ypos },
                             (Vector2) {
                                 xpos + chunk->grad_points[ci].x * 1/world.frequency * SCALE/2.0,
@@ -96,6 +106,62 @@ int main() {
                 }
                 y += chunk->grad_point_count_y;
             }
+
+            int64_t mouse_chunk_x = (GetMouseX() - 1/world.frequency * SCALE) / RENOISE_CHUNK_SIZE / SCALE;
+            int64_t mouse_chunk_y = (GetMouseY() - 1/world.frequency * SCALE) / RENOISE_CHUNK_SIZE / SCALE;
+            if (mouse_chunk_x < 0 || mouse_chunk_x >= (int64_t) world.world_size
+             || mouse_chunk_y < 0 || mouse_chunk_y >= (int64_t) world.world_size) goto end_select;
+            if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+                renoise_world_regenerate_rect(
+                    &world,
+                    mouse_chunk_x_start,
+                    mouse_chunk_y_start,
+                    mouse_chunk_x - mouse_chunk_x_start + 1,
+                    mouse_chunk_y - mouse_chunk_y_start + 1
+                );
+            } else if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+                DrawRectangleLinesEx(
+                    (Rectangle) {
+                        mouse_chunk_x * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE,
+                        mouse_chunk_y * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE,
+                        RENOISE_CHUNK_SIZE * SCALE,
+                        RENOISE_CHUNK_SIZE * SCALE,
+                    },
+                    SCALE/2.0,
+                    RED
+                );
+                DrawText(
+                    TextFormat("(%"PRIi64", %"PRIi64")", mouse_chunk_x, mouse_chunk_y),
+                    mouse_chunk_x * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE,
+                    mouse_chunk_y * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE,
+                    24,
+                    YELLOW
+                );
+            } else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                mouse_chunk_x_start = mouse_chunk_x;
+                mouse_chunk_y_start = mouse_chunk_y;
+            }
+            if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+                DrawRectangleLinesEx(
+                    (Rectangle) {
+                        mouse_chunk_x_start * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE,
+                        mouse_chunk_y_start * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE,
+                        (mouse_chunk_x - mouse_chunk_x_start + 1) * RENOISE_CHUNK_SIZE * SCALE,
+                        (mouse_chunk_y - mouse_chunk_y_start + 1) * RENOISE_CHUNK_SIZE * SCALE,
+                    },
+                    SCALE/2.0,
+                    RED
+                );
+                DrawText(
+                    TextFormat("(%"PRIi64", %"PRIi64", %"PRIi64", %"PRIi64")", mouse_chunk_x_start, mouse_chunk_y_start, mouse_chunk_x - mouse_chunk_x_start + 1, mouse_chunk_y - mouse_chunk_y_start + 1),
+                    mouse_chunk_x_start * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE,
+                    mouse_chunk_y_start * RENOISE_CHUNK_SIZE * SCALE + 1/world.frequency * SCALE,
+                    24,
+                    YELLOW
+                );
+            }
+            end_select:
+            DrawFPS(10, 10);
         EndDrawing();
     }
 

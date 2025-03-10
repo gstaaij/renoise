@@ -80,66 +80,98 @@ double perlin_falloff(double x, double y, Renoise_Gradient_Point gradient) {
     return perlin_function(x) * perlin_function(y) * (x * gradient.x + y * gradient.y);
 }
 
+void renoise_world_generate_chunk_points(Renoise_World* world, uint64_t world_x, uint64_t world_y) {
+    Renoise_Chunk* chunk = &world->chunks[world_x + world_y * world->world_size];
+
+    for (uint8_t chunk_x = 0; chunk_x < RENOISE_CHUNK_SIZE; ++chunk_x) {
+        for (uint8_t chunk_y = 0; chunk_y < RENOISE_CHUNK_SIZE; ++chunk_y) {
+            Renoise_Gradient_Point grad_coord = renoise_chunk_coord_to_gradient_coord(chunk, chunk_x, chunk_y);
+            int64_t grad_cell_x = floor(grad_coord.x);
+            int64_t grad_cell_y = floor(grad_coord.y);
+
+            chunk->points[chunk_y][chunk_x] = 0.0;
+            for (int64_t grid_x = grad_cell_x; grid_x <= grad_cell_x + 1; ++grid_x) {
+                for (int64_t grid_y = grad_cell_y; grid_y <= grad_cell_y + 1; ++grid_y) {
+                    Renoise_Chunk* query_chunk = chunk;
+                    int64_t query_x = grid_x;
+                    int64_t query_y = grid_y;
+                    int64_t current_world_x = world_x;
+                    int64_t current_world_y = world_y;
+                    while (query_x < 0) {
+                        // Use chunk to the left
+                        current_world_x -= 1;
+                        assert(current_world_x >= 0);
+                        query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
+                        query_x = query_chunk->grad_point_count_x - 1;
+                    }
+                    while (query_x >= (int64_t) query_chunk->grad_point_count_x) {
+                        // Use chunk to the right
+                        current_world_x += 1;
+                        assert(current_world_x < (int64_t) world->world_size);
+                        query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
+                        query_x = 0;
+                    }
+                    while (query_y < 0) {
+                        // Use chunk above
+                        current_world_y -= 1;
+                        assert(current_world_y >= 0);
+                        query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
+                        query_y = query_chunk->grad_point_count_y - 1;
+                    }
+                    while (query_y >= (int64_t) query_chunk->grad_point_count_y) {
+                        // Use chunk below
+                        current_world_y += 1;
+                        assert(current_world_y < (int64_t) world->world_size);
+                        query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
+                        query_y = 0;
+                    }
+                    assert(query_x >= 0);
+                    assert(query_x < (int64_t) query_chunk->grad_point_count_x);
+                    assert(query_y >= 0);
+                    assert(query_y < (int64_t) query_chunk->grad_point_count_y);
+
+                    Renoise_Gradient_Point grad_point = query_chunk->grad_points[query_x + query_y * query_chunk->grad_point_count_x];
+                    chunk->points[chunk_y][chunk_x] += perlin_falloff(grad_coord.x - grid_x, grad_coord.y - grid_y, grad_point);
+                }
+            }
+        }
+    }
+}
+
 void renoise_world_generate(Renoise_World* world) {
     for (uint64_t world_y = 1; world_y < world->world_size - 1; ++world_y) {
         for (uint64_t world_x = 1; world_x < world->world_size - 1; ++world_x) {
+            // Generate points for this chunk
+            renoise_world_generate_chunk_points(world, world_x, world_y);
+        }
+    }
+}
+
+void renoise_world_regenerate_rect(Renoise_World* world, int64_t chunk_x, int64_t chunk_y, int64_t width, int64_t height) {
+    for (uint64_t world_y = chunk_y; world_y < (uint64_t) chunk_y + height; ++world_y) {
+        for (uint64_t world_x = chunk_x; world_x < (uint64_t) chunk_x + width; ++world_x) {
             uint64_t index = world_x + world_y * world->world_size;
             Renoise_Chunk* chunk = &world->chunks[index];
+            for (uint64_t grad_y = 0; grad_y < chunk->grad_point_count_y; ++grad_y) {
+                for (uint64_t grad_x = 0; grad_x < chunk->grad_point_count_x; ++grad_x) {
+                    // Skip outer gradient vectors
+                    if (world_x == (uint64_t) chunk_x && grad_x == 0) continue;
+                    if (world_x == (uint64_t) chunk_x + width - 1 && grad_x == chunk->grad_point_count_x - 1) continue;
+                    if (world_y == (uint64_t) chunk_y && grad_y == 0) continue;
+                    if (world_y == (uint64_t) chunk_y + height - 1 && grad_y == chunk->grad_point_count_y - 1) continue;
 
-            // Generate points for this chunk
-            for (uint8_t chunk_x = 0; chunk_x < RENOISE_CHUNK_SIZE; ++chunk_x) {
-                for (uint8_t chunk_y = 0; chunk_y < RENOISE_CHUNK_SIZE; ++chunk_y) {
-                    Renoise_Gradient_Point grad_coord = renoise_chunk_coord_to_gradient_coord(chunk, chunk_x, chunk_y);
-                    int64_t grad_cell_x = floor(grad_coord.x);
-                    int64_t grad_cell_y = floor(grad_coord.y);
-
-                    chunk->points[chunk_y][chunk_x] = 0.0;
-                    for (int64_t grid_x = grad_cell_x; grid_x <= grad_cell_x + 1; ++grid_x) {
-                        for (int64_t grid_y = grad_cell_y; grid_y <= grad_cell_y + 1; ++grid_y) {
-                            Renoise_Chunk* query_chunk = chunk;
-                            int64_t query_x = grid_x;
-                            int64_t query_y = grid_y;
-                            int64_t current_world_x = world_x;
-                            int64_t current_world_y = world_y;
-                            while (query_x < 0) {
-                                // Use chunk to the left
-                                current_world_x -= 1;
-                                assert(current_world_x >= 0);
-                                query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
-                                query_x = query_chunk->grad_point_count_x - 1;
-                            }
-                            while (query_x >= (int64_t) query_chunk->grad_point_count_x) {
-                                // Use chunk to the right
-                                current_world_x += 1;
-                                assert(current_world_x < (int64_t) world->world_size);
-                                query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
-                                query_x = 0;
-                            }
-                            while (query_y < 0) {
-                                // Use chunk above
-                                current_world_y -= 1;
-                                assert(current_world_y >= 0);
-                                query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
-                                query_y = query_chunk->grad_point_count_y - 1;
-                            }
-                            while (query_y >= (int64_t) query_chunk->grad_point_count_y) {
-                                // Use chunk below
-                                current_world_y += 1;
-                                assert(current_world_y < (int64_t) world->world_size);
-                                query_chunk = &world->chunks[current_world_x + current_world_y * world->world_size];
-                                query_y = 0;
-                            }
-                            assert(query_x >= 0);
-                            assert(query_x < (int64_t) query_chunk->grad_point_count_x);
-                            assert(query_y >= 0);
-                            assert(query_y < (int64_t) query_chunk->grad_point_count_y);
-
-                            Renoise_Gradient_Point grad_point = query_chunk->grad_points[query_x + query_y * query_chunk->grad_point_count_x];
-                            chunk->points[chunk_y][chunk_x] += perlin_falloff(grad_coord.x - grid_x, grad_coord.y - grid_y, grad_point);
-                        }
-                    }
+                    chunk->grad_points[grad_x + grad_y * chunk->grad_point_count_x] = renoise_gradient_point_generate();
                 }
             }
+        }
+    }
+
+    // Regenerate chunk points
+    for (uint64_t world_y = chunk_y; world_y < (uint64_t) chunk_y + height; ++world_y) {
+        if (world_y < 1 || world_y >= world->world_size - 1) continue;
+        for (uint64_t world_x = chunk_x; world_x < (uint64_t) chunk_x + width; ++world_x) {
+            if (world_x < 1 || world_x >= world->world_size - 1) continue;
+            renoise_world_generate_chunk_points(world, world_x, world_y);
         }
     }
 }
