@@ -72,6 +72,10 @@ void log_commands(Log_Level level) {
     nob_log(level, "  example   Build the example program");
 }
 
+static const char* examples[] = {
+    "simple_demo",
+};
+
 int main(int argc, char** argv) {
     NOB_GO_REBUILD_URSELF(argc, argv);
 
@@ -105,15 +109,19 @@ int main(int argc, char** argv) {
     if (!compile_example) return 0;
 
     Cmd cmd = {0};
-    CMD_CC(&cmd);
-    CMD_CFLAGS(&cmd);
-    cmd_append(&cmd, "-I./raylib/raylib-5.5_linux_amd64/include");
-    cmd_append(&cmd, "-I./build/include");
-    cmd_append(&cmd, "-o", "./build/object_impermanence");
-    cmd_append(&cmd, "./example/object_impermanence.c");
-    cmd_append(&cmd, "-L./build/lib", "-l:renoise.a");
-    cmd_append(&cmd, "-L./raylib/raylib-5.5_linux_amd64/lib", "-l:libraylib.a", "-lm");
-    if (!cmd_run_sync_and_reset(&cmd)) return 1;
+    Procs procs = {0};
+    for (size_t i = 0; i < ARRAY_LEN(examples); ++i) {
+        CMD_CC(&cmd);
+        CMD_CFLAGS(&cmd);
+        cmd_append(&cmd, "-I./raylib/raylib-5.5_linux_amd64/include");
+        cmd_append(&cmd, "-I./build/include");
+        cmd_append(&cmd, "-o", temp_sprintf("./build/%s", examples[i]));
+        cmd_append(&cmd, temp_sprintf("./example/%s.c", examples[i]));
+        cmd_append(&cmd, "-L./build/lib", "-l:renoise.a");
+        cmd_append(&cmd, "-L./raylib/raylib-5.5_linux_amd64/lib", "-l:libraylib.a", "-lm");
+        da_append(&procs, cmd_run_async_and_reset(&cmd));
+    }
+    if (!procs_wait_and_reset(&procs)) return 1;
 
     return 0;
 } 
