@@ -15,7 +15,7 @@ int main() {
 
     #define SCALE 5
     const int window_size = world->size * RENOISE_CHUNK_SIZE * SCALE + 1/world->frequency * SCALE * 2;
-    InitWindow(window_size, window_size, "Renoise Example: Object Impermanence");
+    InitWindow(window_size, window_size, "Renoise Example: Simple Demo");
     SetTargetFPS(60);
 
     // Visual control booleans
