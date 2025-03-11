@@ -134,6 +134,10 @@ int main() {
                     24,
                     YELLOW
                 );
+
+                if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+                    renoise_world_regenerate_full_chunk(world, mouse_chunk_x, mouse_chunk_y);
+                }
             } else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 mouse_chunk_x_start = mouse_chunk_x;
                 mouse_chunk_y_start = mouse_chunk_y;

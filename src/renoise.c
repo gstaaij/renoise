@@ -187,3 +187,21 @@ void renoise_world_regenerate_rect(Renoise_World* world, int64_t chunk_x, int64_
         }
     }
 }
+
+void renoise_world_regenerate_full_chunk(Renoise_World* world, int64_t chunk_x, int64_t chunk_y) {
+    Renoise_Chunk* chunk = world->chunks[chunk_x + chunk_y * world->size];
+    for (int64_t grad_y = 0; grad_y < chunk->grad_point_count_y; ++grad_y) {
+        for (int64_t grad_x = 0; grad_x < chunk->grad_point_count_x; ++grad_x) {
+            chunk->grad_points[grad_x + grad_y * chunk->grad_point_count_x] = renoise_gradient_point_generate();
+        }
+    }
+
+    // Regenerate chunk points
+    for (int64_t world_y = chunk_y - 1; world_y <= chunk_y + 1; ++world_y) {
+        if (world_y < 1 || world_y >= world->size - 1) continue;
+        for (int64_t world_x = chunk_x - 1; world_x <= chunk_x + 1; ++world_x) {
+            if (world_x < 1 || world_x >= world->size - 1) continue;
+            renoise_world_generate_chunk_points(world, world_x, world_y);
+        }
+    }
+}
