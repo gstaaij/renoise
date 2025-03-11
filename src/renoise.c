@@ -39,10 +39,10 @@ Renoise_Chunk* renoise_chunk_generate(int64_t chunk_x, int64_t chunk_y, double f
     chunk->grad_point_count_x = ceil(grad_point_size - chunk->grad_offset_x);
     chunk->grad_point_count_y = ceil(grad_point_size - chunk->grad_offset_y);
 
-    uint64_t grad_point_count = chunk->grad_point_count_x * chunk->grad_point_count_y;
+    int64_t grad_point_count = chunk->grad_point_count_x * chunk->grad_point_count_y;
     chunk->grad_points = malloc(grad_point_count * sizeof(*chunk->grad_points));
     assert(chunk->grad_points != NULL && "ERROR: Out of memory; buy more RAM.");
-    for (uint64_t i = 0; i < grad_point_count; ++i) {
+    for (int64_t i = 0; i < grad_point_count; ++i) {
         chunk->grad_points[i] = renoise_gradient_point_generate();
     }
 
@@ -61,20 +61,20 @@ Renoise_Gradient_Point renoise_chunk_coord_to_gradient_coord(Renoise_Chunk* chun
     };
 }
 
-Renoise_World* renoise_world_generate(uint64_t world_size, double frequency) {
+Renoise_World* renoise_world_generate(int64_t world_size, double frequency) {
     Renoise_World* world = malloc(sizeof(Renoise_World));
     world->frequency = frequency;
     world->size = world_size;
-    world->chunks = malloc(world_size*world_size * sizeof(*world->chunks));
+    world->chunks = malloc(world->size*world->size * sizeof(*world->chunks));
     assert(world->chunks != NULL && "ERROR: Out of memory; buy more RAM.");
-    for (uint64_t i = 0; i < world_size*world_size; ++i) {
-        uint64_t x = i % world_size;
-        uint64_t y = i / world_size;
+    for (int64_t i = 0; i < world->size*world->size; ++i) {
+        int64_t x = i % world->size;
+        int64_t y = i / world->size;
         world->chunks[i] = renoise_chunk_generate(x, y, frequency);
     }
 
-    for (uint64_t world_y = 1; world_y < world->size - 1; ++world_y) {
-        for (uint64_t world_x = 1; world_x < world->size - 1; ++world_x) {
+    for (int64_t world_y = 1; world_y < world->size - 1; ++world_y) {
+        for (int64_t world_x = 1; world_x < world->size - 1; ++world_x) {
             // Generate points for this chunk
             renoise_world_generate_chunk_points(world, world_x, world_y);
         }
@@ -84,7 +84,7 @@ Renoise_World* renoise_world_generate(uint64_t world_size, double frequency) {
 }
 
 void renoise_world_free(Renoise_World* world) {
-    for (uint64_t i = 0; i < world->size*world->size; ++i) {
+    for (int64_t i = 0; i < world->size*world->size; ++i) {
         renoise_chunk_free(world->chunks[i]);
     }
     free(world->chunks);
@@ -101,7 +101,7 @@ double perlin_falloff(double x, double y, Renoise_Gradient_Point gradient) {
     return perlin_function(x) * perlin_function(y) * (x * gradient.x + y * gradient.y);
 }
 
-void renoise_world_generate_chunk_points(Renoise_World* world, uint64_t world_x, uint64_t world_y) {
+void renoise_world_generate_chunk_points(Renoise_World* world, int64_t world_x, int64_t world_y) {
     Renoise_Chunk* chunk = world->chunks[world_x + world_y * world->size];
 
     for (uint8_t chunk_x = 0; chunk_x < RENOISE_CHUNK_SIZE; ++chunk_x) {
@@ -125,10 +125,10 @@ void renoise_world_generate_chunk_points(Renoise_World* world, uint64_t world_x,
                         query_chunk = world->chunks[current_world_x + current_world_y * world->size];
                         query_x = query_chunk->grad_point_count_x - 1;
                     }
-                    while (query_x >= (int64_t) query_chunk->grad_point_count_x) {
+                    while (query_x >= query_chunk->grad_point_count_x) {
                         // Use chunk to the right
                         current_world_x += 1;
-                        assert(current_world_x < (int64_t) world->size);
+                        assert(current_world_x < world->size);
                         query_chunk = world->chunks[current_world_x + current_world_y * world->size];
                         query_x = 0;
                     }
@@ -139,17 +139,17 @@ void renoise_world_generate_chunk_points(Renoise_World* world, uint64_t world_x,
                         query_chunk = world->chunks[current_world_x + current_world_y * world->size];
                         query_y = query_chunk->grad_point_count_y - 1;
                     }
-                    while (query_y >= (int64_t) query_chunk->grad_point_count_y) {
+                    while (query_y >= query_chunk->grad_point_count_y) {
                         // Use chunk below
                         current_world_y += 1;
-                        assert(current_world_y < (int64_t) world->size);
+                        assert(current_world_y < world->size);
                         query_chunk = world->chunks[current_world_x + current_world_y * world->size];
                         query_y = 0;
                     }
                     assert(query_x >= 0);
-                    assert(query_x < (int64_t) query_chunk->grad_point_count_x);
+                    assert(query_x < query_chunk->grad_point_count_x);
                     assert(query_y >= 0);
-                    assert(query_y < (int64_t) query_chunk->grad_point_count_y);
+                    assert(query_y < query_chunk->grad_point_count_y);
 
                     Renoise_Gradient_Point grad_point = query_chunk->grad_points[query_x + query_y * query_chunk->grad_point_count_x];
                     chunk->points[chunk_y][chunk_x] += perlin_falloff(grad_coord.x - grid_x, grad_coord.y - grid_y, grad_point);
@@ -160,17 +160,17 @@ void renoise_world_generate_chunk_points(Renoise_World* world, uint64_t world_x,
 }
 
 void renoise_world_regenerate_rect(Renoise_World* world, int64_t chunk_x, int64_t chunk_y, int64_t width, int64_t height) {
-    for (uint64_t world_y = chunk_y; world_y < (uint64_t) chunk_y + height; ++world_y) {
-        for (uint64_t world_x = chunk_x; world_x < (uint64_t) chunk_x + width; ++world_x) {
-            uint64_t index = world_x + world_y * world->size;
+    for (int64_t world_y = chunk_y; world_y < chunk_y + height; ++world_y) {
+        for (int64_t world_x = chunk_x; world_x < chunk_x + width; ++world_x) {
+            int64_t index = world_x + world_y * world->size;
             Renoise_Chunk* chunk = world->chunks[index];
-            for (uint64_t grad_y = 0; grad_y < chunk->grad_point_count_y; ++grad_y) {
-                for (uint64_t grad_x = 0; grad_x < chunk->grad_point_count_x; ++grad_x) {
+            for (int64_t grad_y = 0; grad_y < chunk->grad_point_count_y; ++grad_y) {
+                for (int64_t grad_x = 0; grad_x < chunk->grad_point_count_x; ++grad_x) {
                     // Skip outer gradient vectors
-                    if (world_x == (uint64_t) chunk_x && grad_x == 0) continue;
-                    if (world_x == (uint64_t) chunk_x + width - 1 && grad_x == chunk->grad_point_count_x - 1) continue;
-                    if (world_y == (uint64_t) chunk_y && grad_y == 0) continue;
-                    if (world_y == (uint64_t) chunk_y + height - 1 && grad_y == chunk->grad_point_count_y - 1) continue;
+                    if (world_x == chunk_x && grad_x == 0) continue;
+                    if (world_x == chunk_x + width - 1 && grad_x == chunk->grad_point_count_x - 1) continue;
+                    if (world_y == chunk_y && grad_y == 0) continue;
+                    if (world_y == chunk_y + height - 1 && grad_y == chunk->grad_point_count_y - 1) continue;
 
                     chunk->grad_points[grad_x + grad_y * chunk->grad_point_count_x] = renoise_gradient_point_generate();
                 }
@@ -179,9 +179,9 @@ void renoise_world_regenerate_rect(Renoise_World* world, int64_t chunk_x, int64_
     }
 
     // Regenerate chunk points
-    for (uint64_t world_y = chunk_y; world_y < (uint64_t) chunk_y + height; ++world_y) {
+    for (int64_t world_y = chunk_y; world_y < chunk_y + height; ++world_y) {
         if (world_y < 1 || world_y >= world->size - 1) continue;
-        for (uint64_t world_x = chunk_x; world_x < (uint64_t) chunk_x + width; ++world_x) {
+        for (int64_t world_x = chunk_x; world_x < chunk_x + width; ++world_x) {
             if (world_x < 1 || world_x >= world->size - 1) continue;
             renoise_world_generate_chunk_points(world, world_x, world_y);
         }

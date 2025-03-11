@@ -8,7 +8,7 @@ int main() {
     Renoise_World* world = renoise_world_generate(12, 0.2);
 
     printf("\n");
-    for (uint64_t i = 0; i < 6; ++i) {
+    for (int64_t i = 0; i < 6; ++i) {
         Renoise_Chunk* chunk = world->chunks[i];
         printf("chunks[%"PRIu64"] = { .grad_point_count_x = %"PRIu64", .grad_point_count_y = %"PRIu64", .x = %"PRIi64", .y = %"PRIi64", .grad_offset_x = %.16lf, .grad_offset_y = %lf }\n", i, chunk->grad_point_count_x, chunk->grad_point_count_y, chunk->x, chunk->y, chunk->grad_offset_x, chunk->grad_offset_y);
     }
@@ -43,11 +43,11 @@ int main() {
                 grad_vectors = !grad_vectors;
             }
             double y = 0;
-            for (uint64_t wy = 0; wy < world->size; ++wy) {
+            for (int64_t wy = 0; wy < world->size; ++wy) {
                 double x = 0;
                 Renoise_Chunk* chunk = NULL;
-                for (uint64_t wx = 0; wx < world->size; ++wx) {
-                    uint64_t windex = wx + wy*world->size;
+                for (int64_t wx = 0; wx < world->size; ++wx) {
+                    int64_t windex = wx + wy*world->size;
                     chunk = world->chunks[windex];
                     double off_x = wx * RENOISE_CHUNK_SIZE * SCALE + 1/world->frequency * SCALE;
                     double off_y = wy * RENOISE_CHUNK_SIZE * SCALE + 1/world->frequency * SCALE;
@@ -70,9 +70,9 @@ int main() {
                         RENOISE_CHUNK_SIZE * SCALE,
                         (Color) { 0, ((double) wx / (double) world->size) * 255, ((double) wy / (double) world->size) * 255, 127 }
                     );
-                    for (uint64_t ci = 0; ci < chunk->grad_point_count_x*chunk->grad_point_count_y; ++ci) {
-                        uint64_t cx = ci % chunk->grad_point_count_x;
-                        uint64_t cy = ci / chunk->grad_point_count_x;
+                    for (int64_t ci = 0; ci < chunk->grad_point_count_x*chunk->grad_point_count_y; ++ci) {
+                        int64_t cx = ci % chunk->grad_point_count_x;
+                        int64_t cy = ci / chunk->grad_point_count_x;
                         double xpos = off_x + (cx + chunk->grad_offset_x) / world->frequency * SCALE;
                         double ypos = off_y + (cy + chunk->grad_offset_y) / world->frequency * SCALE;
                         if (grad_vectors) DrawRectangle(xpos - SCALE/2, ypos - SCALE/2, SCALE, SCALE, WHITE);
@@ -106,8 +106,8 @@ int main() {
 
             int64_t mouse_chunk_x = (GetMouseX() - 1/world->frequency * SCALE) / RENOISE_CHUNK_SIZE / SCALE;
             int64_t mouse_chunk_y = (GetMouseY() - 1/world->frequency * SCALE) / RENOISE_CHUNK_SIZE / SCALE;
-            if (mouse_chunk_x < 0 || mouse_chunk_x >= (int64_t) world->size
-             || mouse_chunk_y < 0 || mouse_chunk_y >= (int64_t) world->size) goto end_select;
+            if (mouse_chunk_x < 0 || mouse_chunk_x >= world->size
+             || mouse_chunk_y < 0 || mouse_chunk_y >= world->size) goto end_select;
             if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
                 renoise_world_regenerate_rect(
                     world,
