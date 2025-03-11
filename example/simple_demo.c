@@ -5,7 +5,7 @@
 #include <inttypes.h>
 
 int main() {
-    Renoise_World* world = renoise_world_generate(12, 0.2);
+    Renoise_World* world = renoise_world_generate(8, 0.2);
 
     printf("\n");
     for (int64_t i = 0; i < 6; ++i) {
@@ -13,7 +13,7 @@ int main() {
         printf("chunks[%"PRIu64"] = { .grad_point_count_x = %"PRIu64", .grad_point_count_y = %"PRIu64", .x = %"PRIi64", .y = %"PRIi64", .grad_offset_x = %.16lf, .grad_offset_y = %lf }\n", i, chunk->grad_point_count_x, chunk->grad_point_count_y, chunk->x, chunk->y, chunk->grad_offset_x, chunk->grad_offset_y);
     }
 
-    #define SCALE 5
+    #define SCALE 8
     const int window_size = world->size * RENOISE_CHUNK_SIZE * SCALE + 1/world->frequency * SCALE * 2;
     InitWindow(window_size, window_size, "Renoise Example: Simple Demo");
     SetTargetFPS(60);
@@ -22,25 +22,37 @@ int main() {
     bool background = false;
     bool text = false;
     bool extra = false;
-    bool grad_vectors = true;
+    bool grad_vectors = false;
 
     int64_t mouse_chunk_x_start = 0;
     int64_t mouse_chunk_y_start = 0;
+
+    static const char* tutorial_text = "Welcome to the simple Renoise demo!\nPress V, B, T or E to\n  toggle visualisation stuff.\nLeft-click and drag to regenerate\n  a rectangle of noise.\nRight-click to regenerate\n  a full single chunk.\nPress H to toggle this tutorial.";
+    static const int tutorial_lines = 8;
+    static const int tutorial_font_size = 36;
+    bool enable_tutorial = true;
 
     while (!WindowShouldClose()) {
         BeginDrawing();
             ClearBackground(BLACK);
             if (IsKeyPressed(KEY_B)) {
+                enable_tutorial = false;
                 background = !background;
             }
             if (IsKeyPressed(KEY_T)) {
+                enable_tutorial = false;
                 text = !text;
             }
             if (IsKeyPressed(KEY_E)) {
+                enable_tutorial = false;
                 extra = !extra;
             }
             if (IsKeyPressed(KEY_V) || IsKeyPressed(KEY_G)) {
+                enable_tutorial = false;
                 grad_vectors = !grad_vectors;
+            }
+            if (IsKeyPressed(KEY_H)) {
+                enable_tutorial = !enable_tutorial;
             }
             double y = 0;
             for (int64_t wy = 0; wy < world->size; ++wy) {
@@ -136,9 +148,11 @@ int main() {
                 );
 
                 if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+                    enable_tutorial = false;
                     renoise_world_regenerate_full_chunk(world, mouse_chunk_x, mouse_chunk_y);
                 }
             } else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                enable_tutorial = false;
                 mouse_chunk_x_start = mouse_chunk_x;
                 mouse_chunk_y_start = mouse_chunk_y;
             }
@@ -163,6 +177,11 @@ int main() {
             }
             end_select:
             DrawFPS(10, 10);
+
+            if (enable_tutorial) {
+                DrawRectangle(1/world->frequency * SCALE, RENOISE_CHUNK_SIZE * SCALE + 1/world->frequency * SCALE, MeasureText(tutorial_text, tutorial_font_size) + SCALE*4, (tutorial_font_size+2)*tutorial_lines + SCALE*2, BLACK);
+                DrawText(tutorial_text, 1/world->frequency * SCALE + SCALE*2, RENOISE_CHUNK_SIZE * SCALE + 1/world->frequency * SCALE + SCALE, tutorial_font_size, YELLOW);
+            }
         EndDrawing();
     }
 
