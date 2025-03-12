@@ -1,9 +1,9 @@
 #include "renoise.h"
 #include <math.h>
 
-Renoise_Gradient_Point renoise_gradient_point_generate() {
+Renoise_Vector renoise_gradient_point_generate() {
     double angle = ((double) random() / 2147483647.0) * 2*M_PI;
-    return(Renoise_Gradient_Point) {
+    return (Renoise_Vector) {
         .x = cos(angle),
         .y = sin(angle),
     };
@@ -54,8 +54,8 @@ void renoise_chunk_free(Renoise_Chunk* chunk) {
     free(chunk);
 }
 
-Renoise_Gradient_Point renoise_chunk_coord_to_gradient_coord(Renoise_Chunk* chunk, uint8_t chunk_x, uint8_t chunk_y) {
-    return (Renoise_Gradient_Point) {
+Renoise_Vector renoise_chunk_coord_to_gradient_coord(Renoise_Chunk* chunk, uint8_t chunk_x, uint8_t chunk_y) {
+    return (Renoise_Vector) {
         .x = chunk_x * chunk->frequency - chunk->grad_offset_x,
         .y = chunk_y * chunk->frequency - chunk->grad_offset_y,
     };
@@ -97,7 +97,7 @@ double perlin_function(double t) {
     return 1 - (3 - 2*t) * t*t;
 }
 
-double perlin_falloff(double x, double y, Renoise_Gradient_Point gradient) {
+double perlin_falloff(double x, double y, Renoise_Vector gradient) {
     return perlin_function(x) * perlin_function(y) * (x * gradient.x + y * gradient.y);
 }
 
@@ -106,7 +106,7 @@ void renoise_world_generate_chunk_points(Renoise_World* world, int64_t world_x, 
 
     for (uint8_t chunk_x = 0; chunk_x < RENOISE_CHUNK_SIZE; ++chunk_x) {
         for (uint8_t chunk_y = 0; chunk_y < RENOISE_CHUNK_SIZE; ++chunk_y) {
-            Renoise_Gradient_Point grad_coord = renoise_chunk_coord_to_gradient_coord(chunk, chunk_x, chunk_y);
+            Renoise_Vector grad_coord = renoise_chunk_coord_to_gradient_coord(chunk, chunk_x, chunk_y);
             int64_t grad_cell_x = floor(grad_coord.x);
             int64_t grad_cell_y = floor(grad_coord.y);
 
@@ -151,7 +151,7 @@ void renoise_world_generate_chunk_points(Renoise_World* world, int64_t world_x, 
                     assert(query_y >= 0);
                     assert(query_y < query_chunk->grad_point_count_y);
 
-                    Renoise_Gradient_Point grad_point = query_chunk->grad_points[query_x + query_y * query_chunk->grad_point_count_x];
+                    Renoise_Vector grad_point = query_chunk->grad_points[query_x + query_y * query_chunk->grad_point_count_x];
                     chunk->points[chunk_y][chunk_x] += perlin_falloff(grad_coord.x - grid_x, grad_coord.y - grid_y, grad_point);
                 }
             }

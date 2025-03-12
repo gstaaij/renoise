@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define RENOISE_VERSION "0.1.0"
+#define RENOISE_VERSION "0.1.0-DEV"
 
 #define RENOISE_CHUNK_SIZE 16
 static_assert(RENOISE_CHUNK_SIZE >= 0 && RENOISE_CHUNK_SIZE < 256, "RENOISE_CHUNK_SIZE should fit in an unsigned 8-bit integer");
@@ -11,10 +11,10 @@ static_assert(RENOISE_CHUNK_SIZE >= 0 && RENOISE_CHUNK_SIZE < 256, "RENOISE_CHUN
 typedef struct {
     double x;
     double y;
-} Renoise_Gradient_Point;
+} Renoise_Vector;
 
 typedef struct {
-    Renoise_Gradient_Point* grad_points;
+    Renoise_Vector* grad_points;
     int64_t grad_point_count_x;
     int64_t grad_point_count_y;
     int64_t x;
@@ -31,10 +31,10 @@ typedef struct {
     double frequency;
 } Renoise_World;
 
-Renoise_Gradient_Point renoise_gradient_point_generate();
+Renoise_Vector renoise_gradient_point_generate();
 Renoise_Chunk* renoise_chunk_generate(int64_t chunk_x, int64_t chunk_y, double frequency);
 void renoise_chunk_free(Renoise_Chunk* chunk);
-Renoise_Gradient_Point renoise_chunk_coord_to_gradient_coord(Renoise_Chunk* chunk, uint8_t chunk_x, uint8_t chunk_y);
+Renoise_Vector renoise_chunk_coord_to_gradient_coord(Renoise_Chunk* chunk, uint8_t chunk_x, uint8_t chunk_y);
 Renoise_World* renoise_world_generate(int64_t world_size, double frequency);
 void renoise_world_free(Renoise_World* world);
 void renoise_world_generate_chunk_points(Renoise_World* world, int64_t world_x, int64_t world_y);

@@ -15,9 +15,11 @@ int main(void) {
     InitWindow(window_size, window_size, "Renoise Example: Object Impermanence");
     SetTargetFPS(60);
 
-    double player_world_x = RENOISE_CHUNK_SIZE * (VIEW_DISTANCE + 1);
-    double player_world_y = player_world_x;
-    Vector2 player_pos = (Vector2) { player_world_x * SCALE, player_world_y * SCALE };
+    Renoise_Vector player_world_pos = {
+        RENOISE_CHUNK_SIZE * (VIEW_DISTANCE + 1),
+        RENOISE_CHUNK_SIZE * (VIEW_DISTANCE + 1),
+    };
+    Vector2 player_pos = (Vector2) { player_world_pos.x * SCALE, player_world_pos.y * SCALE };
     double player_angle = -45.0;
 
     while (!WindowShouldClose()) {
@@ -56,29 +58,29 @@ int main(void) {
             }
 
             // Calculate frustum bounding box (for chunk collision)
-            // This code is terrible
-            double points_x[3];
-            double points_y[3];
-            points_x[0] = player_world_x;
-            points_y[0] = player_world_y;
-            points_x[1] = player_world_x + cos(player_angle_rad - fov_rad/2.0) * VIEW_DISTANCE * RENOISE_CHUNK_SIZE;
-            points_y[1] = player_world_y + sin(player_angle_rad - fov_rad/2.0) * VIEW_DISTANCE * RENOISE_CHUNK_SIZE;
-            points_x[2] = player_world_x + cos(player_angle_rad + fov_rad/2.0) * VIEW_DISTANCE * RENOISE_CHUNK_SIZE;
-            points_y[2] = player_world_y + sin(player_angle_rad + fov_rad/2.0) * VIEW_DISTANCE * RENOISE_CHUNK_SIZE;
-            double point_min_x =  INFINITY;
-            double point_min_y =  INFINITY;
-            double point_max_x = -INFINITY;
-            double point_max_y = -INFINITY;
+            Renoise_Vector frustum_points[3];
+            frustum_points[0] = player_world_pos;
+            frustum_points[1] = (Renoise_Vector) {
+                player_world_pos.x + cos(player_angle_rad - fov_rad/2.0) * VIEW_DISTANCE * RENOISE_CHUNK_SIZE,
+                player_world_pos.y + sin(player_angle_rad - fov_rad/2.0) * VIEW_DISTANCE * RENOISE_CHUNK_SIZE,
+            };
+            frustum_points[2] = (Renoise_Vector) {
+                player_world_pos.x + cos(player_angle_rad + fov_rad/2.0) * VIEW_DISTANCE * RENOISE_CHUNK_SIZE,
+                player_world_pos.y + sin(player_angle_rad + fov_rad/2.0) * VIEW_DISTANCE * RENOISE_CHUNK_SIZE,
+            };
+            Renoise_Vector frustum_point_min = {  INFINITY,  INFINITY };
+            Renoise_Vector frustum_point_max = { -INFINITY, -INFINITY };
             for (int8_t i = 0; i < 3; ++i) {
-                if (points_x[i] < point_min_x)
-                    point_min_x = points_x[i];
-                if (points_y[i] < point_min_y)
-                    point_min_y = points_y[i];
-                if (points_x[i] > point_max_x)
-                    point_max_x = points_x[i];
-                if (points_y[i] > point_max_y)
-                    point_max_y = points_y[i];
+                if (frustum_points[i].x < frustum_point_min.x)
+                    frustum_point_min.x = frustum_points[i].x;
+                if (frustum_points[i].y < frustum_point_min.y)
+                    frustum_point_min.y = frustum_points[i].y;
+                if (frustum_points[i].x > frustum_point_max.x)
+                    frustum_point_max.x = frustum_points[i].x;
+                if (frustum_points[i].y > frustum_point_max.y)
+                    frustum_point_max.y = frustum_points[i].y;
             }
+
 
             // Draw the "player"
             DrawCircle(window_size/2, window_size/2, SCALE*2, ORANGE);
@@ -101,10 +103,10 @@ int main(void) {
             // Draw frustum bounding box
             DrawRectangleLinesEx(
                 (Rectangle) {
-                    point_min_x * SCALE,
-                    point_min_y * SCALE,
-                    (point_max_x - point_min_x) * SCALE,
-                    (point_max_y - point_min_y) * SCALE,
+                    frustum_point_min.x * SCALE,
+                    frustum_point_min.y * SCALE,
+                    (frustum_point_max.x - frustum_point_min.x) * SCALE,
+                    (frustum_point_max.y - frustum_point_min.y) * SCALE,
                 },
                 SCALE/2.0, RED
             );
