@@ -1,5 +1,6 @@
 #pragma once
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -14,14 +15,15 @@ typedef struct {
 } Renoise_Vector;
 
 typedef struct {
+    int64_t x;
+    int64_t y;
+    double frequency;
+
     Renoise_Vector* grad_points;
     int64_t grad_point_count_x;
     int64_t grad_point_count_y;
-    int64_t x;
-    int64_t y;
     double grad_offset_x;
     double grad_offset_y;
-    double frequency;
     double points[RENOISE_CHUNK_SIZE][RENOISE_CHUNK_SIZE];
 } Renoise_Chunk;
 

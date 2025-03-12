@@ -1,4 +1,5 @@
 #include "renoise.h"
+#include <string.h>
 #include <math.h>
 
 Renoise_Vector renoise_gradient_point_generate() {
@@ -22,6 +23,7 @@ Renoise_Chunk* renoise_chunk_generate(int64_t chunk_x, int64_t chunk_y, double f
     assert(RENOISE_CHUNK_SIZE * frequency >= 1.0 && "ERROR: Frequency too low!");
 
     Renoise_Chunk* chunk = malloc(sizeof(Renoise_Chunk));
+    memset(chunk, 0, sizeof(Renoise_Chunk));
     chunk->frequency = frequency;
     chunk->x = chunk_x;
     chunk->y = chunk_y;
@@ -63,6 +65,7 @@ Renoise_Vector renoise_chunk_coord_to_gradient_coord(Renoise_Chunk* chunk, uint8
 
 Renoise_World* renoise_world_generate(int64_t world_size, double frequency) {
     Renoise_World* world = malloc(sizeof(Renoise_World));
+    memset(world, 0, sizeof(Renoise_World));
     world->frequency = frequency;
     world->size = world_size;
     world->chunks = malloc(world->size*world->size * sizeof(*world->chunks));
