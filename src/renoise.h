@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define RENOISE_VERSION "0.1.0"
+
 #define RENOISE_CHUNK_SIZE 16
 static_assert(RENOISE_CHUNK_SIZE >= 0 && RENOISE_CHUNK_SIZE < 256, "RENOISE_CHUNK_SIZE should fit in an unsigned 8-bit integer");
 
