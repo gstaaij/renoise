@@ -1,6 +1,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <renoise.h>
+#include <string.h>
 #include <math.h>
 
 int main(void) {
@@ -21,6 +22,8 @@ int main(void) {
     };
     Vector2 player_pos = (Vector2) { player_world_pos.x * SCALE, player_world_pos.y * SCALE };
     double player_angle = -45.0;
+    bool seen_chunks[world->size][world->size];
+    memset(seen_chunks, 0, sizeof(seen_chunks));
 
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -43,6 +46,15 @@ int main(void) {
                                 (Color) { gray_val, gray_val, gray_val, 255 }
                             );
                         }
+                    }
+                    if (seen_chunks[wy][wx]) {
+                        DrawRectangle(
+                            off_x,
+                            off_y,
+                            RENOISE_CHUNK_SIZE * SCALE,
+                            RENOISE_CHUNK_SIZE * SCALE,
+                            (Color) { 0, 228, 48, 63 }
+                        );
                     }
                 }
             }
@@ -79,6 +91,23 @@ int main(void) {
                     frustum_point_max.x = frustum_points[i].x;
                 if (frustum_points[i].y > frustum_point_max.y)
                     frustum_point_max.y = frustum_points[i].y;
+            }
+
+            // Mark chunks as "seen"
+            for (int64_t chunk_index = 0; chunk_index < world->size*world->size; ++chunk_index) {
+                Renoise_Chunk* chunk = world->chunks[chunk_index];
+                // Use buffer so you can't see chunks changing (fully regenerating a chunk affects surrounding chunks)
+                // static double buffer = RENOISE_CHUNK_SIZE/2;
+                static double buffer = 0;
+                if (
+                    (chunk->x+1) * RENOISE_CHUNK_SIZE + buffer > frustum_point_min.x && (chunk->y+1) * RENOISE_CHUNK_SIZE + buffer > frustum_point_min.y &&
+                    (chunk->x)   * RENOISE_CHUNK_SIZE - buffer < frustum_point_max.x && (chunk->y)   * RENOISE_CHUNK_SIZE - buffer < frustum_point_max.y
+                ) {
+                    seen_chunks[chunk->y][chunk->x] = true;
+                } else if (seen_chunks[chunk->y][chunk->x]) {
+                    seen_chunks[chunk->y][chunk->x] = false;
+                    renoise_world_regenerate_full_chunk(world, chunk->x, chunk->y);
+                }
             }
 
 
