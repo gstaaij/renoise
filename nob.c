@@ -74,6 +74,7 @@ void log_commands(Log_Level level) {
 
 static const char* examples[] = {
     "simple_demo",
+    "object_impermanence",
 };
 
 int main(int argc, char** argv) {
