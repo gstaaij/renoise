@@ -3,6 +3,7 @@ build
 .vscode
 
 raylib/*.zip
+raylib/*.tar.gz
 
 # Nob
 nob
