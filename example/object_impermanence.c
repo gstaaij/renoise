@@ -63,7 +63,6 @@ int main(void) {
             // Update the "player"
             double player_angle_rad = M_PI * player_angle / 180.0;
             double fov_rad = M_PI * FOV / 180.0;
-            double view_dist_pixels = VIEW_DISTANCE * RENOISE_CHUNK_SIZE * SCALE;
             if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
                 player_angle_rad = atan2(GetMouseY() - player_pos.y, GetMouseX() - player_pos.x);
                 player_angle = player_angle_rad / M_PI * 180.0;
@@ -115,17 +114,17 @@ int main(void) {
             DrawCircle(window_size/2, window_size/2, SCALE*2, ORANGE);
             DrawLineEx(
                 player_pos,
-                Vector2Add(player_pos, (Vector2) { cos(player_angle_rad - fov_rad/2.0) * view_dist_pixels, sin(player_angle_rad - fov_rad/2.0) * view_dist_pixels }),
+                (Vector2) { frustum_points[1].x * SCALE, frustum_points[1].y * SCALE },
                 SCALE, ORANGE
             );
             DrawLineEx(
                 player_pos,
-                Vector2Add(player_pos, (Vector2) { cos(player_angle_rad + fov_rad/2.0) * view_dist_pixels, sin(player_angle_rad + fov_rad/2.0) * view_dist_pixels }),
+                (Vector2) { frustum_points[2].x * SCALE, frustum_points[2].y * SCALE },
                 SCALE, ORANGE
             );
             DrawLineEx(
-                Vector2Add(player_pos, (Vector2) { cos(player_angle_rad - fov_rad/2.0) * view_dist_pixels, sin(player_angle_rad - fov_rad/2.0) * view_dist_pixels }),
-                Vector2Add(player_pos, (Vector2) { cos(player_angle_rad + fov_rad/2.0) * view_dist_pixels, sin(player_angle_rad + fov_rad/2.0) * view_dist_pixels }),
+                (Vector2) { frustum_points[1].x * SCALE, frustum_points[1].y * SCALE },
+                (Vector2) { frustum_points[2].x * SCALE, frustum_points[2].y * SCALE },
                 SCALE, ORANGE
             );
 
