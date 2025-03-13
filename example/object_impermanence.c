@@ -11,11 +11,13 @@ int main(void) {
     #define VIEW_DISTANCE 3
     #define FOV 90.0
 
+    // Initialize window
     const int window_size = world->size * RENOISE_CHUNK_SIZE * SCALE;
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(window_size, window_size, "Renoise Example: Object Impermanence");
     SetTargetFPS(60);
 
+    // Initialize some needed variables
     Renoise_Vector player_world_pos = {
         RENOISE_CHUNK_SIZE * (VIEW_DISTANCE + 1),
         RENOISE_CHUNK_SIZE * (VIEW_DISTANCE + 1),

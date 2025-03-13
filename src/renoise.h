@@ -39,6 +39,6 @@ void renoise_chunk_free(Renoise_Chunk* chunk);
 Renoise_Vector renoise_chunk_coord_to_gradient_coord(Renoise_Chunk* chunk, uint8_t chunk_x, uint8_t chunk_y);
 Renoise_World* renoise_world_generate(int64_t world_size, double frequency);
 void renoise_world_free(Renoise_World* world);
-void renoise_world_generate_chunk_points(Renoise_World* world, int64_t world_x, int64_t world_y);
+void renoise_world_generate_chunk_points(Renoise_World* world, int64_t chunk_x, int64_t chunk_y);
 void renoise_world_regenerate_rect(Renoise_World* world, int64_t chunk_x, int64_t chunk_y, int64_t width, int64_t height);
 void renoise_world_regenerate_full_chunk(Renoise_World* world, int64_t chunk_x, int64_t chunk_y);
