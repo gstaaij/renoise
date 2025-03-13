@@ -3,8 +3,11 @@
 #include "src/nob.h"
 
 #define CMD_CC(cmd) cmd_append(cmd, "gcc")
+#define CMD_CC_WIN(cmd) cmd_append(cmd, "x86_64-w64-mingw32-gcc", "-static")
 #define CMD_CFLAGS(cmd) cmd_append(cmd, "-Wall", "-Wextra", "-Wswitch-enum", "-ggdb")
 #define CMD_LFLAGS(cmd) cmd_append(cmd, "-lm")
+
+#define COMPILE_WIN true
 
 static const char* renoise_cfiles[] = {
     "renoise",
@@ -14,10 +17,15 @@ bool build_renoise() {
     bool result = true;
     Cmd cmd = {0};
     File_Paths object_files = {0};
+    File_Paths object_files_win = {0};
     Procs procs = {0};
 
     if (!mkdir_if_not_exists("./build/renoise")) return_defer(false);
+    if (COMPILE_WIN)
+        if (!mkdir_if_not_exists("./build/renoise/windows")) return_defer(false);
     if (!mkdir_if_not_exists("./build/lib")) return_defer(false);
+    if (COMPILE_WIN)
+        if (!mkdir_if_not_exists("./build/lib/windows")) return_defer(false);
     if (!mkdir_if_not_exists("./build/include")) return_defer(false);
 
     for (size_t i = 0; i < ARRAY_LEN(renoise_cfiles); ++i) {
@@ -40,6 +48,22 @@ bool build_renoise() {
             Proc proc = cmd_run_async_and_reset(&cmd);
             da_append(&procs, proc);
         }
+
+        if (COMPILE_WIN) {
+            output_path = temp_sprintf("./build/renoise/windows/%s.o", renoise_cfiles[i]);
+
+            da_append(&object_files_win, output_path);
+
+            if (needs_rebuild(output_path, depends, ARRAY_LEN(depends))) {
+                CMD_CC_WIN(&cmd);
+                CMD_CFLAGS(&cmd);
+                cmd_append(&cmd, "-c", input_path);
+                cmd_append(&cmd, "-o", output_path);
+                CMD_LFLAGS(&cmd);
+                Proc proc = cmd_run_async_and_reset(&cmd);
+                da_append(&procs, proc);
+            }
+        }
     }
     if (!procs_wait_and_reset(&procs)) return_defer(false);
 
@@ -48,6 +72,15 @@ bool build_renoise() {
         cmd_append(&cmd, "ar", "-crs", lib_path);
         cmd_append(&cmd, "./build/renoise/renoise.o");
         if (!cmd_run_sync_and_reset(&cmd)) return_defer(false);
+    }
+
+    if (COMPILE_WIN) {
+        const char* lib_path = "./build/lib/windows/renoise.a";
+        if (needs_rebuild(lib_path, object_files.items, object_files.count)) {
+            cmd_append(&cmd, "ar", "-crs", lib_path);
+            cmd_append(&cmd, "./build/renoise/windows/renoise.o");
+            if (!cmd_run_sync_and_reset(&cmd)) return_defer(false);
+        }
     }
 
     const char* header_src = "./src/renoise.h";
@@ -121,6 +154,18 @@ int main(int argc, char** argv) {
         cmd_append(&cmd, "-L./build/lib", "-l:renoise.a");
         cmd_append(&cmd, "-L./raylib/raylib-5.5_linux_amd64/lib", "-l:libraylib.a", "-lm");
         da_append(&procs, cmd_run_async_and_reset(&cmd));
+
+        if (COMPILE_WIN) {
+            CMD_CC_WIN(&cmd);
+            CMD_CFLAGS(&cmd);
+            cmd_append(&cmd, "-I./raylib/raylib-5.5_win64_mingw-w64/include");
+            cmd_append(&cmd, "-I./build/include");
+            cmd_append(&cmd, "-o", temp_sprintf("./build/%s", examples[i]));
+            cmd_append(&cmd, temp_sprintf("./example/%s.c", examples[i]));
+            cmd_append(&cmd, "-L./build/lib/windows", "-l:renoise.a");
+            cmd_append(&cmd, "-L./raylib/raylib-5.5_win64_mingw-w64/lib", "-l:libraylib.a", "-lwinmm", "-lgdi32");
+            da_append(&procs, cmd_run_async_and_reset(&cmd));
+        }
     }
     if (!procs_wait_and_reset(&procs)) return 1;
 
